@@ -9,10 +9,13 @@ package robotlegs.bender.extensions.relaxedEventMap.impl
 {
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
+
 	import org.hamcrest.assertThat;
 	import org.hamcrest.collection.array;
 	import org.hamcrest.object.equalTo;
 	import org.hamcrest.object.instanceOf;
+
+	import robotlegs.bender.extensions.relaxedEventMap.api.IRelaxedEventMap;
 	import robotlegs.bender.extensions.relaxedEventMap.support.SampleEvent;
 
 	public class RelaxedEventMapTest
@@ -29,7 +32,7 @@ package robotlegs.bender.extensions.relaxedEventMap.impl
 		/* Private Properties                                                         */
 		/*============================================================================*/
 
-		private var subject:RelaxedEventMap;
+		private var subject:IRelaxedEventMap;
 
 		private var eventDispatcher:EventDispatcher;
 
@@ -79,19 +82,6 @@ package robotlegs.bender.extensions.relaxedEventMap.impl
 			}
 			subject.mapRelaxedListener(SampleEvent.SOMETHING_HAPPENED, handler, SampleEvent);
 			assertThat(actual, equalTo(SampleEvent.SOMETHING_HAPPENED));
-		}
-
-		[Test]
-		public function unmapListener_unmaps_relaxed_listener():void
-		{
-			var called:Boolean = false;
-			var handler:Function = function(event:SampleEvent):void {
-				called = true;
-			};
-			subject.mapRelaxedListener(SampleEvent.SOMETHING_HAPPENED, handler, SampleEvent);
-			subject.unmapListener(eventDispatcher, SampleEvent.SOMETHING_HAPPENED, handler, SampleEvent);
-			eventDispatcher.dispatchEvent(new SampleEvent(SampleEvent.SOMETHING_HAPPENED));
-			assertThat(called, equalTo(false));
 		}
 
 		[Test]
@@ -164,6 +154,31 @@ package robotlegs.bender.extensions.relaxedEventMap.impl
 			subject.unmapListenersFor(loser);
 			eventDispatcher.dispatchEvent(new SampleEvent(SampleEvent.SOMETHING_HAPPENED));
 			assertThat(called, array('keeper'));
+		}
+
+		[Test]
+		public function suspends_listening() : void{
+			var called : Boolean = false;
+			var handler : Function = function(event:Event):void{
+				called = true;
+			};
+			subject.mapRelaxedListener(SampleEvent.SOMETHING_HAPPENED, handler);
+			subject.suspend();
+			eventDispatcher.dispatchEvent(new SampleEvent(SampleEvent.SOMETHING_HAPPENED));
+			assertThat(called, equalTo(false));
+		}
+
+		[Test]
+		public function resumes_listening() : void{
+			var called : Boolean = false;
+			var handler : Function = function(event:Event):void{
+				called = true;
+			};
+			subject.mapRelaxedListener(SampleEvent.SOMETHING_HAPPENED, handler);
+			subject.suspend();
+			subject.resume();
+			eventDispatcher.dispatchEvent(new SampleEvent(SampleEvent.SOMETHING_HAPPENED));
+			assertThat(called, equalTo(true));
 		}
 	}
 }

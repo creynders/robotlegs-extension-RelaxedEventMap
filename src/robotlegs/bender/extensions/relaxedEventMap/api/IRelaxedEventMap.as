@@ -57,5 +57,15 @@ package robotlegs.bender.extensions.relaxedEventMap.api
 		 * @param key A key to identify a group of listeners
 		 */
 		function unmapListenersFor(key:*):void;
+
+		/**
+		 * Suspends all listeners registered through <code>mapRelaxedListener</code>
+		 */
+		function suspend():void;
+
+		/**
+		 * Resumes all listeners registered through <code>mapRelaxedListener</code>
+		 */
+		function resume():void;
 	}
 }
