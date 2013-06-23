@@ -1,103 +1,70 @@
-**What's it so relaxed about?** 
+# Relaxed Event Map
 
-Sometimes, race conditions, or dynamic view creation, mean that a mediator only registers for a data event after the event has fired.
-Common workarounds include injecting your model into your mediator. Yuk! 
+## Overview
 
-The RelaxedEventMap allows you to take your time over adding your views and registering for events. 
+The Relaxed Event Map allows to register listeners with the shared event dispatcher for events that already have been dispatched.
+It facilitates in dealing with racing conditions, where e.g. a model has already sent an update event before a mediator that listens for that event has been instantiated.
 
-When you mapRelaxedListener it will check whether it has previously received an instance of that particular event & type. If it has then the event is redispatched _only_ to the handler that is being registered.
+## Basic Usage
 
-Think of mapRelaxedListener as 'I'd like to listen for this event in future, oh - and if it has already happened then I'd like to get that most recent event right now as well please'.  It's like listening back into the past, but only for the most recent occurrence.
+It is necessary to tell the Relaxed Event Map to remember an event and store the last dispatched instance.
 
+```as3
+relaxedEventMap.rememberEvent(FooEvent.Foo, FooEvent);
+```
 
-**Compatibility**
+If you register a listener for this event it will be called even if the event has already been dispatched.
 
-Robotlegs utility, tested against robotlegs v1.0 thru 1.4
+```as3    
+eventDispatcher.dispatchEvent(new FooEvent(FooEvent.FOO));
+relaxedEventMap.mapRelaxedListener(FooEvent.Foo, listener, FooEvent); //handler will be called immediately, i.e. synchronously
+```       
 
-Full test coverage is provided with asunit 3.
+## Unmapping specific listeners
 
-No swc as you should compile from source to ensure it extends the same version of robotlegs as the rest of your project.
+```as3
+relaxedEventMap.unmapRelaxedListener(FooEvent.Foo, listener, FooEvent);
+```
 
+## Unmapping all listeners for an object
 
-**Usage:**     
+You can pass an 'owner' object as a fourth parameter to the mapping method and unmap all listeners at once with `unmapListenersFor`.
 
-In your context:
+```as3
+relaxedEventMap.mapRelaxedListener(SomeDataEvent.DATA_SET_UPDATED, updatedHandler, SomeDataEvent, this);
+relaxedEventMap.mapRelaxedListener(SomeDataEvent.DATA_SET_DELETED, deletedHandler, SomeDataEvent, this);    
 	
-	// implement this interface:
-	import org.robotlegs.core.IRelaxedEventContext;
-	
-	protected var _relaxedEventMap:IRelaxedEventMap;
-	
-	public function get relaxedEventMap():IRelaxedEventMap
-	{
-		return _relaxedEventMap ||= new RelaxedEventMap(eventDispatcher);
-	}
-	
-	public function set relaxedEventMap(value:IRelaxedEventMap):void
-	{
-		_relaxedEventMap = value;
-	}
-	
-	override protected function mapInjections():void
-	{
-		super.mapInjections();
-		injector.mapValue(IRelaxedEventMap, relaxedEventMap);
-	}
-	
+relaxedEventMap.unmapListenersFor(this);
+```
+ 
+# Relaxed Event Map Extension
 
-It is also necessary to add a dummy handler to tell the relaxedEventMap to pick up this event.
-You can do this in your context startup, or in a dedicated bootstrap Command.                            
+## Requirements
 
-	// using a dedicated method that creates an empty listener for you
-	relaxedEventMap.rememberEvent(SomeDataEvent.DATA_SET_UPDATED, SomeDataEvent);
-    
-	// or manually - for example so you can trace or log the event in the function passed here
-	relaxedEventMap.mapRelaxedListener(SomeDataEvent.DATA_SET_UPDATED, function():void{}, SomeDataEvent);
-       
+This extension requires the following extensions:
 
-Where you want to ensure the mediator receives the event, even if onRegister runs _after_ it has been fired.
-Note that the parameters are similar to mapListener, but the dispatcher is always the shared eventDispatcher.
-    
-	// first - inject the relaxedEventMap
-	[Inject]
-	public var relaxedEventMap:IRelaxedEventMap;
-	
-	// then
-	public override function onRegister():void
-	{
-    	relaxedEventMap.mapRelaxedListener(SomeDataEvent.DATA_SET_UPDATED, handler, SomeDataEvent);
-    }
-       
++ EventDispatcherExtension
++ LocalEventMapExtension
 
-**Clean up**
+## Extension Installation
 
-In most other respects the RelaxedEventMap behaves just like the normal eventMap. The key difference is that there is only one RelaxedEventMap, where your individual mediators each have their own eventMap. If you need to de-register for the event when your view leaves the stage:
+```as3
+_context = new Context().install(
+    EventDispatcherExtension,
+    RelaxedEventMapExtension);
+```
 
-	// in the mediator, override preRemove
-	public override function preRemove():void
-	{
-		relaxedEventMap.unmapRelaxedListener(SomeDataEvent.DATA_SET_UPDATED, handler, SomeDataEvent);
-	}
-	
-	
-** Passing the owner mediator for easier cleanup **
+Or, assuming that the EventDispatcherExtension has already been installed:
 
-You can pass the mediator instance as an additional optional parameter when you mapRelaxedListener which then allows you to unmap all the listeners for that mediator (or object) in one go.
+```as3
+_context.install(RelaxedEventMapExtension);
+```
 
-	// pass the mediator 'this' as the ownerObject
-	relaxedEventMap.mapRelaxedListener(SomeDataEvent.DATA_SET_UPDATED, updatedHandler, SomeDataEvent, this);
-	relaxedEventMap.mapRelaxedListener(SomeDataEvent.DATA_SET_DELETED, deletedHandler, SomeDataEvent, this);    
-	
-	// remove all the listeners for this mediator in one go:
-	public override function preRemove():void
-	{
-		relaxedEventMap.unmapListenersFor(this);
-	}
+## Extension Usage
 
+An instance of IRelaxedEventMap is mapped into the context during extension installation. This instance can be injected into clients and used as below.
 
-**Warnings**
-
-Because the relaxedEventMap is shared across mediators, be very careful before using 'unmapListeners' (as inherited from EventMap) as this will remove *all* the listeners, including the dummy ones set up using rememberEvent.
-
-You could potentially still wish to use this approach in - for example - the clean-up of a module being unloaded from your application - hence it is still available, but should only be used with caution.
-  
+```as3
+[Inject]
+public var relaxedEventMap:IRelaxedEventMap;
+```
