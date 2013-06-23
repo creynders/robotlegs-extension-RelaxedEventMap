@@ -9,7 +9,7 @@ It facilitates in dealing with racing conditions, where e.g. a model has already
 
 ### Notes:
 
-* Requires a Robotlegs version greater than v2.0.0, depends on a change made in commit 0a9e40b 
+* Requires a Robotlegs version greater than v2.0.0, depends on a change made in commit [0a9e40b](https://github.com/robotlegs/robotlegs-framework/commit/0a9e40b4204a32a563f206e7d5f3b4cb8ff7bcf6) 
 * This is a direct port from Stray's [robotlegs-utilities-relaxedeventmap](https://github.com/Stray/robotlegs-utilities-RelaxedEventMap) for Robotlegs v1
 
 ## Basic Usage
