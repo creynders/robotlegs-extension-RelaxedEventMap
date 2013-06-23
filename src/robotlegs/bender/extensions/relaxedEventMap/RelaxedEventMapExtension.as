@@ -7,19 +7,21 @@
 
 package robotlegs.bender.extensions.relaxedEventMap
 {
-	import robotlegs.bender.extensions.relaxedEventMap.impl.RelaxedEventMapTest;
+	import robotlegs.bender.extensions.relaxedEventMap.api.IRelaxedEventMap;
+	import robotlegs.bender.extensions.relaxedEventMap.impl.RelaxedEventMap;
+	import robotlegs.bender.framework.api.IContext;
+	import robotlegs.bender.framework.api.IExtension;
 
-	[RunWith("org.flexunit.runners.Suite")]
-	[Suite]
-	public class RelaxedEventMapExtensionTestSuite
+	public class RelaxedEventMapExtension implements IExtension
 	{
 
 		/*============================================================================*/
-		/* Public Properties                                                          */
+		/* Public Functions                                                           */
 		/*============================================================================*/
 
-		public var relaxedEventMapExtension:RelaxedEventMapExtensionTest;
-
-		public var relaxedEventMap:RelaxedEventMapTest;
+		public function extend(context:IContext):void
+		{
+			context.injector.map(IRelaxedEventMap).toSingleton(RelaxedEventMap);
+		}
 	}
 }

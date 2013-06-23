@@ -22,11 +22,11 @@ package robotlegs.bender.extensions.relaxedEventMap.impl
 		/* Private Properties                                                         */
 		/*============================================================================*/
 
-		private var _unmappingsByOwner:Dictionary;
+		private var _unmappingsByKey:Dictionary;
 
-		private function get unmappingsByOwner():Dictionary
+		private function get unmappingsByKey():Dictionary
 		{
-			return _unmappingsByOwner || (_unmappingsByOwner = new Dictionary());
+			return _unmappingsByKey || (_unmappingsByKey = new Dictionary());
 		}
 
 		private var _eventsReceivedByClass:Dictionary;
@@ -41,6 +41,9 @@ package robotlegs.bender.extensions.relaxedEventMap.impl
 		/* Constructor                                                                */
 		/*============================================================================*/
 
+		/**
+		 * @private
+		 */
 		public function RelaxedEventMap(eventDispatcher:IEventDispatcher, logger:ILogger = null)
 		{
 			super();
@@ -54,11 +57,25 @@ package robotlegs.bender.extensions.relaxedEventMap.impl
 		/* Public Functions                                                           */
 		/*============================================================================*/
 
+		/**
+		 * @inheritDoc
+		 */
+		public function rememberEvent(type:String, eventClass:Class = null):void
+		{
+			var emptyListener:Function = function():void {
+			};
+			_emptyListeners.push(emptyListener);
+			mapListener(this._eventDispatcher, type, emptyListener, eventClass);
+		}
+
+		/**
+		 * @inherit
+		 */
 		public function mapRelaxedListener(
 			type:String,
 			listener:Function,
 			eventClass:Class = null,
-			ownerObject:* = null,
+			key:* = null,
 			useCapture:Boolean = false,
 			priority:int = 0,
 			useWeakReference:Boolean = true):void
@@ -72,48 +89,46 @@ package robotlegs.bender.extensions.relaxedEventMap.impl
 				temporaryDispatcher.dispatchEvent(eventToSupply);
 			}
 
-			if (ownerObject != null)
+			if (key != null)
 			{
-				unmappingsByOwner[ownerObject] ||= [];
+				unmappingsByKey[key] ||= [];
 				var unmapping:Function = function():void
 				{
 					unmapRelaxedListener(type, listener, eventClass, useCapture);
 				}
-				unmappingsByOwner[ownerObject].push(unmapping);
+				unmappingsByKey[key].push(unmapping);
 			}
 
 			mapListener(this._eventDispatcher, type, listener, eventClass, useCapture, priority, useWeakReference);
 		}
 
+		/**
+		 * @inheritDoc
+		 */
 		public function unmapRelaxedListener(
 			type:String,
 			listener:Function,
 			eventClass:Class = null,
-			ownerObject:* = null,
+			key:* = null,
 			useCapture:Boolean = false):void
 		{
 			unmapListener(this._eventDispatcher, type, listener, eventClass, useCapture);
 		}
 
-		public function rememberEvent(type:String, eventClass:Class = null):void
+		/**
+		 * @inheritDoc
+		 */
+		public function unmapListenersFor(key:*):void
 		{
-			var emptyListener:Function = function():void {
-			};
-			_emptyListeners.push(emptyListener);
-			mapListener(this._eventDispatcher, type, emptyListener, eventClass);
-		}
+			if (unmappingsByKey[key] == null) return;
 
-		public function unmapListenersFor(ownerObject:*):void
-		{
-			if (unmappingsByOwner[ownerObject] == null) return;
-
-			for each (var unmapping:Function in unmappingsByOwner[ownerObject])
+			for each (var unmapping:Function in unmappingsByKey[key])
 			{
 				unmapping();
 			}
 
-			delete unmappingsByOwner[ownerObject];
-			_logger && _logger.debug('Relaxed event listeners unmapped for {0}', [ownerObject]);
+			delete unmappingsByKey[key];
+			_logger && _logger.debug('Relaxed event listeners unmapped for {0}', [key]);
 		}
 
 		/*============================================================================*/

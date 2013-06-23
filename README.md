@@ -2,8 +2,15 @@
 
 ## Overview
 
+An extension for Robotlegs v2.
+
 The Relaxed Event Map allows to register listeners with the shared event dispatcher for events that already have been dispatched.
 It facilitates in dealing with racing conditions, where e.g. a model has already sent an update event before a mediator that listens for that event has been instantiated.
+
+### Notes:
+
+* Requires a Robotlegs version greater than v2.0.0, depends on a change made in commit 0a9e40b 
+* This is a direct port from Stray's [robotlegs-utilities-relaxedeventmap](https://github.com/Stray/robotlegs-utilities-RelaxedEventMap) for Robotlegs v1
 
 ## Basic Usage
 
@@ -26,15 +33,15 @@ relaxedEventMap.mapRelaxedListener(FooEvent.Foo, listener, FooEvent); //handler 
 relaxedEventMap.unmapRelaxedListener(FooEvent.Foo, listener, FooEvent);
 ```
 
-## Unmapping all listeners for an object
+## Unmapping all listeners for a key
 
-You can pass an 'owner' object as a fourth parameter to the mapping method and unmap all listeners at once with `unmapListenersFor`.
+You can pass a key as a fourth parameter to the mapping method and unmap all listeners at once with `unmapListenersFor`.
 
 ```as3
-relaxedEventMap.mapRelaxedListener(SomeDataEvent.DATA_SET_UPDATED, updatedHandler, SomeDataEvent, this);
-relaxedEventMap.mapRelaxedListener(SomeDataEvent.DATA_SET_DELETED, deletedHandler, SomeDataEvent, this);    
+relaxedEventMap.mapRelaxedListener(SomeDataEvent.DATA_SET_UPDATED, updatedHandler, SomeDataEvent, this); //'this' used as key
+relaxedEventMap.mapRelaxedListener(SomeDataEvent.DATA_SET_DELETED, deletedHandler, SomeDataEvent, this); //'this' used as key
 	
-relaxedEventMap.unmapListenersFor(this);
+relaxedEventMap.unmapListenersFor(this); //'this' used as key
 ```
  
 # Relaxed Event Map Extension
