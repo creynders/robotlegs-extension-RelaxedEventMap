@@ -51,7 +51,6 @@ relaxedEventMap.unmapListenersFor(this); //'this' used as key
 This extension requires the following extensions:
 
 + EventDispatcherExtension
-+ LocalEventMapExtension
 
 ## Extension Installation
 
