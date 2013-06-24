@@ -157,6 +157,19 @@ package robotlegs.bender.extensions.relaxedEventMap.impl
 		}
 
 		[Test]
+		public function removes_listener_for_key() : void{
+			var key : Object = {};
+			var called:Boolean = false;
+			var handler:Function = function(event:Event):void {
+				called = true;
+			};
+			subject.mapRelaxedListener(SampleEvent.SOMETHING_HAPPENED, handler, SampleEvent, key);
+			subject.unmapRelaxedListener(SampleEvent.SOMETHING_HAPPENED, handler, SampleEvent, key);
+			eventDispatcher.dispatchEvent(new SampleEvent(SampleEvent.SOMETHING_HAPPENED));
+			assertThat(called, equalTo(false));
+		}
+
+		[Test]
 		public function suspends_listening() : void{
 			var called : Boolean = false;
 			var handler : Function = function(event:Event):void{

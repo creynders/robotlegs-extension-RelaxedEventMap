@@ -12,6 +12,7 @@ package robotlegs.bender.extensions.relaxedEventMap.impl
 	import flash.events.IEventDispatcher;
 	import flash.utils.Dictionary;
 	import robotlegs.bender.extensions.localEventMap.impl.EventMap;
+	import robotlegs.bender.extensions.localEventMap.impl.EventMapConfig;
 	import robotlegs.bender.extensions.relaxedEventMap.api.IRelaxedEventMap;
 	import robotlegs.bender.framework.api.ILogger;
 
@@ -22,11 +23,11 @@ package robotlegs.bender.extensions.relaxedEventMap.impl
 		/* Private Properties                                                         */
 		/*============================================================================*/
 
-		private var _unmappingsByKey:Dictionary;
+		private var _configsByKey:Dictionary;
 
-		private function get unmappingsByKey():Dictionary
+		private function get configsByKey():Dictionary
 		{
-			return _unmappingsByKey || (_unmappingsByKey = new Dictionary());
+			return _configsByKey || (_configsByKey = new Dictionary());
 		}
 
 		private var _eventsReceivedByClass:Dictionary;
@@ -91,12 +92,16 @@ package robotlegs.bender.extensions.relaxedEventMap.impl
 
 			if (key != null)
 			{
-				unmappingsByKey[key] ||= [];
-				var unmapping:Function = function():void
-				{
-					unmapRelaxedListener(type, listener, eventClass, useCapture);
-				}
-				unmappingsByKey[key].push(unmapping);
+				configsByKey[key] ||= new Vector.<EventMapConfig>();
+				const config:EventMapConfig = new EventMapConfig(
+					_eventDispatcher,
+					type,
+					listener,
+					eventClass,
+					unmapListener,
+					useCapture
+					);
+				configsByKey[key].push(config);
 			}
 
 			mapListener(this._eventDispatcher, type, listener, eventClass, useCapture, priority, useWeakReference);
@@ -113,6 +118,7 @@ package robotlegs.bender.extensions.relaxedEventMap.impl
 			useCapture:Boolean = false):void
 		{
 			unmapListener(this._eventDispatcher, type, listener, eventClass, useCapture);
+			key && removeConfigFromList(listener, key);
 		}
 
 		/**
@@ -120,14 +126,16 @@ package robotlegs.bender.extensions.relaxedEventMap.impl
 		 */
 		public function unmapListenersFor(key:*):void
 		{
-			if (unmappingsByKey[key] == null) return;
+			const configs:Vector.<EventMapConfig> = configsByKey[key];
+			if (configs == null) return;
 
-			for each (var unmapping:Function in unmappingsByKey[key])
+			for each (var config:EventMapConfig in configs)
 			{
-				unmapping();
+				config.callback.call(this, config.dispatcher, config.eventString,
+					config.listener, config.eventClass, config.useCapture);
 			}
 
-			delete unmappingsByKey[key];
+			delete configsByKey[key];
 			_logger && _logger.debug('Relaxed event listeners unmapped for {0}', [key]);
 		}
 
@@ -149,5 +157,31 @@ package robotlegs.bender.extensions.relaxedEventMap.impl
 
 			}
 		}
+
+		/*============================================================================*/
+		/* Private Functions                                                          */
+		/*============================================================================*/
+
+		private function removeConfigFromList(listener:Function, key:*):void
+		{
+			var configs:Vector.<EventMapConfig> = configsByKey[key]
+			if (configs && configs.length > 0)
+			{
+				var i:int = configs.length;
+				while (i--)
+				{
+					var config:EventMapConfig = configs[i];
+					if (config.listener === listener)
+					{
+						configs.splice(i, 1);
+						if( configs.length <= 0){
+							delete configsByKey[key];
+						}
+						return;
+					}
+				}
+			}
+		}
 	}
 }
+
